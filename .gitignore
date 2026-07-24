@@ -29,3 +29,8 @@ wandb/
 #     `python -m hlsenv baseline <task_dir>`. Task dirs themselves ARE committed.
 #     (uncomment if you prefer not to ship any baseline numbers at all)
 # kernels_*/**/task.json
+
+# --- CUDA->CSL (Cerebras) work lives in its own project; kept on disk, not tracked here ---
+CSL_*.md
+scripts/*csl*.py
+scripts/pbs/csl_*.pbs
