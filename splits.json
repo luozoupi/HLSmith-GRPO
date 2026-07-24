@@ -1,0 +1,58 @@
+{
+  "_comment": "Canonical train/val/test split for the polybench offline-RL (SFT) and online GRPO-v2 claims. Single source of truth: cite THIS file, not any per-run config. See splits.md for prose.",
+  "suite": "hlsfactory_polybench_float_small",
+  "toolchain": { "vitis_hls": "2023.2", "part": "xcu280-fsvh2892-2L-e", "clock_ns": 3.33 },
+
+  "split_basis": "benchmark",
+  "_split_basis_note": "The split is held out BY BENCHMARK (not by sample). A benchmark's rows are entirely in one split. train/val/test are pairwise-disjoint.",
+
+  "applies_to": {
+    "offline_sft": {
+      "corpus": "data/sft_qwen_v3 (external to repo)",
+      "teacher": ["claude-sonnet-4-6 (3713 rows)", "claude-haiku-4-5-20251001 (53 rows)"],
+      "content": "BOTH single-shot translation AND multi-turn agentic trajectories, mixed. Of 3766 train rows: 465 are single-shot (<=3 messages: system/user/assistant) and 3301 are agentic (>3 messages: the c2hls translate->repair->optimize loop). The split does NOT depend on turn count; it is the same benchmark partition for translation and agentic rows alike.",
+      "checkpoint": "models/qwen7b_sft_v1 (see models.md) — trained on the train split only"
+    },
+    "online_grpo_v2": {
+      "note": "GRPO-v2 (kernels_polybench/) trains from the 7B BASE on the SAME train benchmarks, so offline-SFT and online-GRPO-v2 are directly comparable on val/test. Held-out = val + test.",
+      "task_dirs": "kernels_polybench/hlsfactory_<bench>/"
+    }
+  },
+
+  "train": [
+    "hlsfactory_2mm", "hlsfactory_3mm", "hlsfactory_atax", "hlsfactory_bicg",
+    "hlsfactory_cholesky", "hlsfactory_correlation", "hlsfactory_covariance",
+    "hlsfactory_fdtd_2d", "hlsfactory_gemver", "hlsfactory_gesummv",
+    "hlsfactory_heat_3d", "hlsfactory_jacobi_1d", "hlsfactory_jacobi_2d",
+    "hlsfactory_lu", "hlsfactory_ludcmp", "hlsfactory_mvt", "hlsfactory_nussinov",
+    "hlsfactory_seidel_2d", "hlsfactory_symm", "hlsfactory_syr2k",
+    "hlsfactory_syrk", "hlsfactory_trisolv"
+  ],
+  "val":  ["hlsfactory_gramschmidt"],
+  "test": ["hlsfactory_durbin", "hlsfactory_floyd_warshall", "hlsfactory_gemm", "hlsfactory_trmm"],
+
+  "counts": { "train_benches": 22, "val_benches": 1, "test_benches": 4,
+              "train_rows": 3766, "val_rows": 144, "test_rows": 615 },
+
+  "eval_suite": {
+    "name": "polybench-26",
+    "path": "data/suite_polybench26",
+    "size": 26,
+    "_relationship": "The reported evals run on this 26-benchmark suite, which is NOT identical to the SFT corpus's benchmark set. Read these caveats before quoting eval numbers as 'held-out':",
+    "held_out_present_in_suite": ["hlsfactory_gramschmidt", "hlsfactory_durbin", "hlsfactory_floyd-warshall", "hlsfactory_gemm", "hlsfactory_trmm"],
+    "seen_in_training_present_in_suite": 20,
+    "never_in_sft_corpus_fully_unseen": ["hlsfactory_doitgen"],
+    "train_only_absent_from_suite": ["hlsfactory_heat_3d", "hlsfactory_seidel_2d"],
+    "_naming_note": "The suite uses hyphens for multi-word names (hlsfactory_floyd-warshall, hlsfactory_jacobi-1d, hlsfactory_fdtd-2d, hlsfactory_seidel-2d, hlsfactory_heat-3d); the SFT corpus uses underscores. They denote the same benchmarks."
+  },
+
+  "related_but_separate": {
+    "online_grpo_v1_rodinia": {
+      "note": "The ORIGINAL online-RL (GRPO v1) uses a DIFFERENT benchmark universe entirely: 17 rodinia/ML4Accel tasks in kernels_c2hls/. It has no polybench overlap. Its polybench-26 numbers are fully out-of-domain. Do NOT conflate its split with this file.",
+      "task_dirs": "kernels_c2hls/",
+      "benches": ["aes","fft","gemm_ncubed","hotspot","kmeans","knn","lavaMD","lud","md_knn","nw","pathfinder","sort_merge","spmv_crs","srad","stencil2D","StreamCluster","viterbi"],
+      "usable_for_grpo": 14,
+      "excluded": {"hotspot": "GT fails own testbench", "srad": "GT fails own testbench", "viterbi": "GT synth > 3600s at 3.33ns"}
+    }
+  }
+}
