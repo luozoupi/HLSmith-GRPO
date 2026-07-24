@@ -1,0 +1,50 @@
+# site.sh — per-machine configuration. NOT tracked by git.
+#
+#   cp scripts/env/site.sh.example scripts/env/site.sh   &&   edit
+#
+# env_llmhls.sh and env_vitis.sh source this file if it exists. Everything here
+# is optional: without a site.sh the env scripts fall back to a layout inferred
+# from the repo's own location (see the defaults noted per variable).
+
+# --- Project root: holds envs/, caches/, runs/, hls_archive/ ---------------
+# Default: two directories above the repo (i.e. the repo sits at $ROOT/projects/llm-hls).
+# Set this explicitly if you cloned the repo anywhere else.
+# export HLSMITH_ROOT=/scratch/$USER/hlsmith
+
+# --- Python virtualenv ------------------------------------------------------
+# Default: $HLSMITH_ROOT/envs/llmhls
+# export HLSMITH_VENV=$HLSMITH_ROOT/envs/llmhls
+
+# --- Vitis HLS install ------------------------------------------------------
+# Default: $HLSMITH_ROOT/tools/xilinx, then a few common system locations,
+# then whatever `vitis_hls` is already on PATH (e.g. from `module load`).
+# export XILINX_ROOT=/opt/Xilinx
+# export XILINX_VERSION=2023.2
+#
+# If your site provides Vitis via environment modules instead, leave XILINX_ROOT
+# unset and load it before sourcing env_vitis.sh:
+#   module load vitis/2023.2
+
+# --- Vitis HLS tcl runner ---------------------------------------------------
+# Classic 2023.2 uses `vitis_hls -f`; 2024.1+ uses the unified `vitis-run` CLI.
+# export HLS_TCL_RUNNER="vitis_hls -f"
+
+# --- Target device ----------------------------------------------------------
+# Must match whatever your baselines were generated against, or every reward is skewed.
+# export HLS_PART=xcu280-fsvh2892-2L-e
+# export HLS_CLOCK_NS=3.33
+
+# --- Node-local scratch for HLS synthesis ----------------------------------
+# MUST be node-local (NVMe/tmpfs), never a shared parallel FS — synthesis creates
+# thousands of small files and will thrash Lustre/GPFS.
+# Common choices: /local/scratch/$JOBID, /tmp/$USER, $TMPDIR, /dev/shm/$USER
+# export HLSMITH_SCRATCH=/tmp/$USER/hlsenv
+
+# --- Egress proxy (compute nodes without direct internet) -------------------
+# Set to "" to force no proxy. If unset, ALCF Polaris is auto-detected.
+# export HLSMITH_PROXY=http://proxy.example.edu:3128
+
+# --- Keep an active conda env ----------------------------------------------
+# By default the env script deactivates conda, because a base env that
+# auto-activates in .bashrc shadows the venv's python. Set to 1 to keep it.
+# export HLSMITH_KEEP_CONDA=1

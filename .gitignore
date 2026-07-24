@@ -34,3 +34,6 @@ wandb/
 CSL_*.md
 scripts/*csl*.py
 scripts/pbs/csl_*.pbs
+
+# --- per-machine site config (see scripts/env/site.sh.example) ---
+scripts/env/site.sh
