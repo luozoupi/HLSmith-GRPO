@@ -1,0 +1,31 @@
+# --- crash dumps (these were 21GB) ---
+core.*
+
+# --- scheduler job output (PBS <name>.o<jobid>) ---
+*.o[0-9]*
+*.e[0-9]*
+*.log
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# --- run artifacts / large data: regenerated, never committed ---
+runs/
+caches/
+models/
+hls_archive/
+outputs/
+wandb/
+*.ckpt
+*.safetensors
+*.pt
+
+# --- baselines are Vitis-version + part specific: regenerate on each site with
+#     `python -m hlsenv baseline <task_dir>`. Task dirs themselves ARE committed.
+#     (uncomment if you prefer not to ship any baseline numbers at all)
+# kernels_*/**/task.json

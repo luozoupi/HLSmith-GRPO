@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_symm",
+  "top": "kernel_symm",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 211201,
+    "lat_avg": 1238401,
+    "lat_worst": 2246401,
+    "ii_min": 211202,
+    "ii_max": 2246402,
+    "clk_est_ns": 2.777,
+    "lut": 1797,
+    "ff": 2578,
+    "dsp": 19,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "symm.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_symm",
+  "gt_file": "hls_baseline.cpp"
+}

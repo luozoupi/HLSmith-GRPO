@@ -1,0 +1,38 @@
+{
+  "name": "stencil2D__coalescing",
+  "top": "workload",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 24265,
+    "lat_avg": 24265,
+    "lat_worst": 24265,
+    "ii_min": 24266,
+    "ii_max": 24266,
+    "clk_est_ns": 2.48,
+    "lut": 4246,
+    "ff": 4658,
+    "dsp": 36,
+    "bram": 42,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "stencil.h"
+  ],
+  "source_benchmark": "/home/lyb/code_translation_c2hls/benchmarks/stencil2D",
+  "gt_file": "hls_baseline.cpp",
+  "source_task": "stencil2D",
+  "step": "coalescing"
+}

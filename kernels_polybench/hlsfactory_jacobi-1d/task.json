@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_jacobi-1d",
+  "top": "kernel_jacobi_1d",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 21201,
+    "lat_avg": 21201,
+    "lat_worst": 21201,
+    "ii_min": 21202,
+    "ii_max": 21202,
+    "clk_est_ns": 2.323,
+    "lut": 1440,
+    "ff": 2098,
+    "dsp": 11,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "jacobi-1d.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_jacobi-1d",
+  "gt_file": "hls_baseline.cpp"
+}

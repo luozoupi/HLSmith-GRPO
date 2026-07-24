@@ -1,0 +1,31 @@
+{
+  "name": "fir_u280",
+  "top": "fir",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 149,
+    "lat_avg": 149,
+    "lat_worst": 149,
+    "ii_min": 150,
+    "ii_max": 150,
+    "clk_est_ns": 2.291,
+    "lut": 1010,
+    "ff": 2256,
+    "dsp": 24,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 650000,
+    "ff": 1300000,
+    "dsp": 4512,
+    "bram": 2016
+  }
+}

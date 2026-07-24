@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_covariance",
+  "top": "kernel_covariance",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 139978,
+    "lat_avg": 2635978,
+    "lat_worst": 5195978,
+    "ii_min": 139979,
+    "ii_max": 5195979,
+    "clk_est_ns": 2.494,
+    "lut": 3169,
+    "ff": 3570,
+    "dsp": 14,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "covariance.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_covariance",
+  "gt_file": "hls_baseline.cpp"
+}

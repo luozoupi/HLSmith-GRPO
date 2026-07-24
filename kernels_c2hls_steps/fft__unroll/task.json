@@ -1,0 +1,38 @@
+{
+  "name": "fft__unroll",
+  "top": "workload",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 36368,
+    "lat_avg": 36368,
+    "lat_worst": 36368,
+    "ii_min": 36369,
+    "ii_max": 36369,
+    "clk_est_ns": 3.33,
+    "lut": 79591,
+    "ff": 77849,
+    "dsp": 406,
+    "bram": 24,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "fft.h"
+  ],
+  "source_benchmark": "/home/lyb/code_translation_c2hls/benchmarks/fft",
+  "gt_file": "hls_baseline.cpp",
+  "source_task": "fft",
+  "step": "unroll"
+}

@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -A argonne_tpc
+#PBS -q preemptable
+#PBS -l select=1
+#PBS -l walltime=06:00:00
+#PBS -l filesystems=home:eagle
+#PBS -N sft_7b
+#PBS -j oe
+
+# Gate run first:  qsub -q debug -l walltime=01:00:00 -v EXTRA="--max_steps 100" sft.pbs
+# Full run:        qsub -v MODEL=...,DATASET=...,OUTDIR=... sft.pbs
+# Preemptable-safe: save_steps + auto-resume in train_sft.py.
+
+cd "$PBS_O_WORKDIR"
+PROJ=/eagle/argonne_tpc/lyb/projects/llm-hls
+source "$PROJ/scripts/env/env_llmhls.sh"
+export HF_HUB_OFFLINE=1 WANDB_MODE=offline
+
+MODEL=${MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}
+DATASET=${DATASET:-/eagle/argonne_tpc/lyb/data/hls_sft_v1}
+OUTDIR=${OUTDIR:-/eagle/argonne_tpc/lyb/runs/sft_7b_v1}
+# ACCEL_CONFIG lets big models (e.g. Qwen3-32B @ 32K) use configs/fsdp_offload.yaml
+# (CPU param offload) to avoid activation-memory OOM on 40GB A100s. Defaults to fsdp.yaml.
+ACCEL_CONFIG=${ACCEL_CONFIG:-$PROJ/configs/fsdp.yaml}
+
+accelerate launch --config_file "$ACCEL_CONFIG" --num_processes 4 \
+  "$PROJ/train_sft.py" \
+  --model "$MODEL" --dataset "$DATASET" --output_dir "$OUTDIR" \
+  --max_seq_len 4096 --save_steps 25 ${EXTRA:-}

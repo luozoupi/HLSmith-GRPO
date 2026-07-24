@@ -1,0 +1,42 @@
+{
+  "name": "kmeans__tiling",
+  "top": "workload",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 694,
+    "lat_avg": 7535434,
+    "lat_worst": 15070072,
+    "ii_min": 695,
+    "ii_max": 15070073,
+    "clk_est_ns": 2.798,
+    "lut": 89206,
+    "ff": 158522,
+    "dsp": 1190,
+    "bram": 5,
+    "uram": 102,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "kmeans.h",
+    "support/common/mars_wide_bus.h",
+    "support/common/mars_wide_bus_2d.h",
+    "support/common/mars_wide_bus_4d.h",
+    "support/common/mc.h"
+  ],
+  "source_benchmark": "/home/lyb/code_translation_c2hls/benchmarks/kmeans",
+  "gt_file": "hls_kmeans_4_doublebuffer.cpp",
+  "source_task": "kmeans",
+  "step": "tiling"
+}

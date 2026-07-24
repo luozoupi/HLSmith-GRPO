@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_gemver",
+  "top": "kernel_gemver",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 216211,
+    "lat_avg": 216211,
+    "lat_worst": 216211,
+    "ii_min": 216212,
+    "ii_max": 216212,
+    "clk_est_ns": 2.601,
+    "lut": 3251,
+    "ff": 4981,
+    "dsp": 22,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "gemver.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_gemver",
+  "gt_file": "hls_baseline.cpp"
+}

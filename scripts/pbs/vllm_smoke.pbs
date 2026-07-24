@@ -1,0 +1,50 @@
+#!/bin/bash
+#PBS -A argonne_tpc
+#PBS -q debug
+#PBS -l select=1
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home:eagle
+#PBS -N vllm_smoke
+#PBS -j oe
+
+# Usage: qsub -v MODEL=Qwen/Qwen2.5-Coder-7B-Instruct,TP=1 vllm_smoke.pbs
+#        qsub -v MODEL=Qwen/Qwen2.5-Coder-32B-Instruct-AWQ,TP=4 vllm_smoke.pbs
+#        qsub -v MODEL=hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4,TP=4 vllm_smoke.pbs
+
+cd "$PBS_O_WORKDIR"
+source /eagle/argonne_tpc/lyb/projects/llm-hls/scripts/env/env_llmhls.sh
+export HF_HUB_OFFLINE=1        # models prefetched on the login node
+
+MODEL=${MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}
+TP=${TP:-1}
+MAXLEN=${MAXLEN:-8192}
+
+echo "=== vLLM smoke: $MODEL TP=$TP ==="
+nvidia-smi -L
+
+# vLLM may switch to spawn multiprocessing, which re-imports the main module —
+# so this must be a real script file, never a heredoc/<stdin>.
+SMOKE_PY=/tmp/vllm_smoke_${PBS_JOBID%%.*}.py
+cat > "$SMOKE_PY" <<EOF
+import time
+from vllm import LLM, SamplingParams
+
+if __name__ == "__main__":
+    llm = LLM(model="$MODEL", tensor_parallel_size=$TP,
+              gpu_memory_utilization=0.90, max_model_len=$MAXLEN)
+    prompts = ["Write a Vitis HLS C++ 8-tap FIR filter with pragmas for II=1:"] * 8
+    t0 = time.time()
+    outs = llm.generate(prompts, SamplingParams(max_tokens=512, temperature=0.8))
+    dt = time.time() - t0
+    toks = sum(len(o.outputs[0].token_ids) for o in outs)
+    print(f"=== {toks} tokens in {dt:.1f}s = {toks/dt:.1f} tok/s ===")
+    print(outs[0].outputs[0].text[:800])
+EOF
+python "$SMOKE_PY"
+rc=$?
+if [ $rc -eq 0 ]; then
+  echo "=== SMOKE OK: $MODEL ==="
+else
+  echo "=== SMOKE FAILED (rc=$rc): $MODEL ==="
+  exit $rc
+fi

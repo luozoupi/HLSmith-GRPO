@@ -1,0 +1,58 @@
+#!/bin/bash
+#PBS -A argonne_tpc
+#PBS -q debug
+#PBS -l select=1
+#PBS -l walltime=00:40:00
+#PBS -l filesystems=home:eagle
+#PBS -N g4_probe
+#PBS -j oe
+
+# Make-or-break test: does cu129-built vLLM 0.25.1 run gemma-4-31B on Polaris'
+# CUDA-12.8 driver (minor-version-compatibility gamble)?
+
+cd "$PBS_O_WORKDIR"
+G4=/eagle/argonne_tpc/lyb/envs/llmhls_g4
+# de-shadow miniconda, then activate the g4 env
+while [ -n "${CONDA_PREFIX:-}" ]; do conda deactivate 2>/dev/null || break; done
+source "$G4/bin/activate"
+export HF_HOME=/eagle/argonne_tpc/lyb/caches/hf
+export HF_HUB_OFFLINE=1
+export VLLM_CACHE_ROOT=/eagle/argonne_tpc/lyb/caches/vllm_g4
+mkdir -p "$VLLM_CACHE_ROOT"
+
+# vLLM 0.25 flashinfer JIT-compiles sampling kernels; give its linker a real
+# CUDA 12.9 toolkit so `-lcudart` resolves (compiler stubs dir lacks it).
+export CUDA_HOME=/soft/compilers/cudatoolkit/cuda-12.9.1
+export LIBRARY_PATH=$CUDA_HOME/lib64:$CUDA_HOME/lib64/stubs${LIBRARY_PATH:+:$LIBRARY_PATH}
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+export PATH=$CUDA_HOME/bin:$PATH
+
+echo "=== driver / arch check ==="
+nvidia-smi --query-gpu=name,driver_version --format=csv,noheader | head -1
+python - <<'EOF'
+import torch
+print("torch", torch.__version__, "| runtime CUDA", torch.version.cuda)
+print("device_count:", torch.cuda.device_count())
+try:
+    x = torch.randn(64, 64, device="cuda"); print("cuda matmul ok:", float((x @ x).sum()))
+    print("CUDA_KERNELS_LOAD: OK")
+except Exception as e:
+    print("CUDA_KERNELS_LOAD: FAIL ->", repr(e)[:200])
+EOF
+
+echo "=== vLLM serve gemma-4-31B (TP=2) — the real test ==="
+SMOKE=/tmp/g4_smoke_${PBS_JOBID%%.*}.py
+cat > "$SMOKE" <<'EOF'
+from vllm import LLM, SamplingParams
+if __name__ == "__main__":
+    llm = LLM(model="google/gemma-4-31B-it", tensor_parallel_size=2,
+              gpu_memory_utilization=0.92, max_model_len=8192, trust_remote_code=True)
+    out = llm.generate(["Write a Vitis HLS C++ 8-tap FIR filter:"],
+                       SamplingParams(max_tokens=128, temperature=0.7))
+    print(out[0].outputs[0].text[:400])
+    print("GEMMA4_SERVE_OK")
+EOF
+python "$SMOKE"
+rc=$?
+echo "=== probe exit: $rc ==="
+exit $rc

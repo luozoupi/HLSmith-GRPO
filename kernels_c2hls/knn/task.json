@@ -1,0 +1,40 @@
+{
+  "name": "knn",
+  "top": "workload",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 1526,
+  "csim": true,
+  "baseline": {
+    "lat_best": 8208,
+    "lat_avg": 1059858,
+    "lat_worst": 2111508,
+    "ii_min": 8209,
+    "ii_max": 2111509,
+    "clk_est_ns": 2.45,
+    "lut": 22559,
+    "ff": 135291,
+    "dsp": 28,
+    "bram": 2,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "knn.h",
+    "support/common/mars_wide_bus_4d.h",
+    "support/common/mars_wide_bus_2d.h",
+    "support/common/mc.h",
+    "support/common/mars_wide_bus.h"
+  ],
+  "source_benchmark": "/home/lyb/code_translation_c2hls/benchmarks/knn",
+  "gt_file": "hls_knn_4_doublebuffer.cpp"
+}

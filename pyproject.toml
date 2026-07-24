@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hlsenv"
+version = "0.1.0"
+description = "Vitis HLS synthesis as an RL reward environment for TRL GRPO"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["hlsenv"]

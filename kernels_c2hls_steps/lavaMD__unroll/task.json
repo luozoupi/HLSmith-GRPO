@@ -1,0 +1,38 @@
+{
+  "name": "lavaMD__unroll",
+  "top": "workload",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 2714,
+    "lat_avg": 2253466,
+    "lat_worst": 4504218,
+    "ii_min": 2715,
+    "ii_max": 4504219,
+    "clk_est_ns": 2.905,
+    "lut": 49585,
+    "ff": 299626,
+    "dsp": 89,
+    "bram": 8,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "lavaMD.h"
+  ],
+  "source_benchmark": "/home/lyb/code_translation_c2hls/benchmarks/lavaMD",
+  "gt_file": "hls_lavaMD_5_coalescing.cpp",
+  "source_task": "lavaMD",
+  "step": "unroll"
+}

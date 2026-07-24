@@ -1,0 +1,118 @@
+Apply DOUBLE BUFFERING optimization to the following HLS code.
+
+Double buffering means:
+- Create TWO copies of each local buffer (e.g., buffer_A_1 and buffer_A_2)
+- In the outer loop, alternate between buffer pairs: when loading into buffer_1, compute from buffer_2, and vice versa
+- Use a flag (e.g., `(iteration/tile_size) % 2`) to select which buffer set to use
+- This allows the load and compute phases to overlap in time
+
+The load() and compute() functions should accept a flag parameter to select buffers.
+Keep all existing pipeline/partition pragmas.
+
+Current synthesis report:
+  lat_worst: 2113553
+  ii_max: 2113554
+  lut: 3253
+  ff: 2447
+  dsp: 17
+  bram: 7
+  clk_est_ns: 2.545
+
+Header:
+```cpp
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+//-----------------------------------------------
+//Original
+// #define ROWS 16384
+// #define COLS 16384
+//-----------------------------------------------
+//-----------------------------------------------
+//Alec-added
+#define ROWS 1024
+#define COLS 1024
+//-----------------------------------------------
+#define TYPE int32_t
+#define MIN(a,b) ((a)<=(b) ? (a) : (b))
+
+void pathfinder_kernel(int32_t J[ROWS*COLS], int32_t Jout[COLS]);
+
+////////////////////////////////////////////////////////////////////////////////
+// Test harness interface code.
+
+struct bench_args_t {
+  int32_t J[ROWS*COLS];
+  int32_t Jout[COLS];
+};
+
+```
+
+Current HLS code:
+```cpp
+#include "pathfinder.h"
+#include "support/common/mc.h"
+
+void pathfinder_kernel(int32_t J[ROWS*COLS], int32_t Jout[COLS]){
+	int32_t temp;
+	int32_t i, t, tt, n;
+	int32_t min, before;
+
+	KERNEL2: for(t = 0; t < ROWS-1 ;t++){
+		for(n = 0; n < COLS; n++){
+			min = Jout[n];
+			
+			if(n > 0){
+				min = MIN(min,before);
+			}
+	
+			if(n < COLS-1){
+				min = MIN(min,Jout[n+1]);
+			}
+			before = Jout[n];
+			
+			Jout[n] = J[(t+1) * COLS + n]+min;
+		}
+	}
+}
+
+extern "C" {
+void workload(int32_t J[ROWS * COLS], int32_t Jout[COLS]) {
+  
+ 	#pragma HLS INTERFACE m_axi port=J offset=slave bundle=gmem
+ 	#pragma HLS INTERFACE m_axi port=Jout offset=slave bundle=gmem
+  	#pragma HLS INTERFACE s_axilite port=J bundle=control
+  	#pragma HLS INTERFACE s_axilite port=Jout bundle=control
+  	#pragma HLS INTERFACE s_axilite port=return bundle=control
+	
+	int32_t dst[COLS], src[COLS];
+	int32_t i, t, tt, n;
+	int32_t min;
+
+	memcpy(dst,J,sizeof(int32_t) * COLS);
+
+	KERNEL_OUTER: for(t = 0; t < ROWS-1 ;t++){
+		KERNEL_INNER: for(n = 0; n < COLS; n++){
+			min = dst[n];
+			
+			if(n > 0){
+				min = MIN(min,dst[n-1]);
+			}
+	
+			if(n < COLS-1){
+				min = MIN(min,dst[n+1]);
+			}
+			
+			src[n] = J[(t+1) * COLS + n]+min;
+		}
+		memcpy(dst,src,sizeof(int32_t) * COLS);
+	}  	
+	memcpy(Jout,dst,sizeof(int32_t) * COLS);
+	return;
+							  
+}
+}
+```
+
+Provide the complete double-buffer-optimized code in a ```cpp code fence.

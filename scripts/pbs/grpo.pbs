@@ -1,0 +1,67 @@
+#!/bin/bash
+#PBS -A argonne_tpc
+#PBS -q preemptable
+#PBS -l select=1
+#PBS -l walltime=12:00:00
+#PBS -l filesystems=home:eagle
+#PBS -N grpo_hls
+#PBS -j oe
+
+# Gate run first (1.5B, debug queue):
+#   qsub -q debug -l walltime=01:00:00 \
+#     -v MODEL=Qwen/Qwen2.5-Coder-1.5B-Instruct,OUTDIR=/eagle/argonne_tpc/lyb/runs/grpo_gate,EXTRA="--max_steps 2" grpo.pbs
+
+cd "$PBS_O_WORKDIR"
+PROJ=/eagle/argonne_tpc/lyb/projects/llm-hls
+source "$PROJ/scripts/env/env_llmhls.sh"
+source "$PROJ/scripts/env/env_vitis.sh"
+export HF_HUB_OFFLINE=1 WANDB_MODE=offline
+# colocated vLLM + trainer fragment the allocator; expandable segments reclaims it
+export PYTORCH_ALLOC_CONF=expandable_segments:True,garbage_collection_threshold:0.7
+
+MODEL=${MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}
+OUTDIR=${OUTDIR:-/eagle/argonne_tpc/lyb/runs/grpo_7b_v1}
+
+# HLS reward workers: node-local NVMe scratch, cores 12-31 (0-11 stay with
+# the 4 training ranks + vLLM engine), archive reports to Eagle on the way out.
+# HLSENV_WORKERS is the TOTAL per node — hlsenv divides it (and the core set)
+# across the 4 accelerate ranks automatically.
+SCRATCH=/local/scratch/${PBS_JOBID%%.*}/hlsenv
+mkdir -p "$SCRATCH"
+export HLSENV_SCRATCH=$SCRATCH
+export HLSENV_WORKERS=${HLSENV_WORKERS:-16}
+export HLSENV_CORES=${HLSENV_CORES:-12-31}
+export HLSENV_ARCHIVE=/eagle/argonne_tpc/lyb/hls_archive/${PBS_JOBID%%.*}
+mkdir -p "$HLSENV_ARCHIVE"
+
+# NVMe is wiped at job end — pull anything still there back to Eagle.
+trap 'mkdir -p "$HLSENV_ARCHIVE/scratch_leftover" && rsync -a "$SCRATCH/" "$HLSENV_ARCHIVE/scratch_leftover/" || echo "WARN: scratch-leftover rsync failed"' EXIT
+
+# Optional pre-step: merge an SFT LoRA adapter into MERGE_BASE to produce MODEL.
+# Runs on the compute node (login-node cgroup OOM-kills the ~30GB CPU merge).
+if [ -n "${MERGE_ADAPTER:-}" ]; then
+  python "$PROJ/scripts/merge_adapter.py" \
+    --base "${MERGE_BASE:-Qwen/Qwen2.5-Coder-7B-Instruct}" \
+    --adapter "$MERGE_ADAPTER" --out "$MODEL" || exit 1
+fi
+
+if [ "${GRPO_VLLM_MODE:-colocate}" = "server" ]; then
+  # Server split: GPU 3 serves the policy via trl vllm-serve; GPUs 0-2 train.
+  CUDA_VISIBLE_DEVICES=3 trl vllm-serve --model "$MODEL" --port 8000 \
+    --gpu-memory-utilization 0.90 \
+    > "$PBS_O_WORKDIR/trl_vllm_serve_${PBS_JOBID%%.*}.log" 2>&1 &
+  SERVE_PID=$!
+  trap 'kill $SERVE_PID 2>/dev/null' EXIT
+  for i in $(seq 1 90); do
+    curl -s --max-time 5 http://localhost:8000/health >/dev/null 2>&1 && { echo "vllm-serve ready (~$((i*10))s)"; break; }
+    kill -0 $SERVE_PID 2>/dev/null || { echo "trl vllm-serve died"; exit 1; }
+    sleep 10
+  done
+  CUDA_VISIBLE_DEVICES=0,1,2 accelerate launch --num_processes 3 \
+    "$PROJ/train_grpo.py" \
+    --model "$MODEL" --output_dir "$OUTDIR" --vllm_mode server ${EXTRA:-}
+else
+  accelerate launch --num_processes 4 \
+    "$PROJ/train_grpo.py" \
+    --model "$MODEL" --output_dir "$OUTDIR" ${EXTRA:-}
+fi

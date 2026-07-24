@@ -1,0 +1,103 @@
+#!/bin/bash
+#PBS -A argonne_tpc
+#PBS -q debug
+#PBS -l select=1
+#PBS -l walltime=01:00:00
+#PBS -l filesystems=home:eagle
+#PBS -N c2hls_vllm
+#PBS -j oe
+
+# End-to-end C2HLS functionality gate on ONE node:
+#   vLLM serves MODEL on 127.0.0.1:8000  ->  c2hls.py talks to it via
+#   OPENAI_BASE_URL  ->  vitis_hls 2023.2 evaluates on the same node's CPUs.
+#
+# Usage:
+#   qsub -v MODEL=Qwen/Qwen2.5-Coder-7B-Instruct,TP=1,BENCH=gemm_ncubed c2hls_vllm.pbs
+#   qsub -q preemptable -l walltime=12:00:00 -v MODEL=Qwen/Qwen2.5-Coder-32B-Instruct-AWQ,TP=4,C2HLS_ARGS=--all c2hls_vllm.pbs
+
+cd "$PBS_O_WORKDIR"
+PROJ=/eagle/argonne_tpc/lyb/projects/llm-hls
+C2HLS=${C2HLS:-/home/lyb/code_translation_c2hls}
+
+source "$PROJ/scripts/env/env_llmhls.sh"
+# USE_G4_ENV switches to the cu129 stack (vLLM 0.25) that can serve gemma-4,
+# and gives flashinfer's JIT a real CUDA 12.9 toolkit to link against.
+if [ -n "${USE_G4_ENV:-}" ]; then
+  deactivate 2>/dev/null || true
+  source /eagle/argonne_tpc/lyb/envs/llmhls_g4/bin/activate
+  export CUDA_HOME=/soft/compilers/cudatoolkit/cuda-12.9.1
+  export LIBRARY_PATH=$CUDA_HOME/lib64:$CUDA_HOME/lib64/stubs${LIBRARY_PATH:+:$LIBRARY_PATH}
+  export LD_LIBRARY_PATH=$CUDA_HOME/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+  export PATH=$CUDA_HOME/bin:$PATH
+fi
+export HF_HUB_OFFLINE=1
+
+MODEL=${MODEL:-Qwen/Qwen2.5-Coder-7B-Instruct}
+TP=${TP:-1}
+MAXLEN=${MAXLEN:-16384}
+BENCH=${BENCH:-gemm_ncubed}
+TURNS=${TURNS:-3}
+
+# --- Vitis evaluator env (patched hls_eval.py reads these) ---
+export VITIS_SETTINGS=$PROJ/scripts/env/env_vitis.sh
+export HLS_TCL_RUNNER="vitis_hls -f"
+export HLS_PART=${HLS_PART:-xcu280-fsvh2892-2L-e}
+export HLS_CLOCK_NS=${HLS_CLOCK_NS:-3.33}
+export HLS_WORK_ROOT=/local/scratch/${PBS_JOBID%%.*}/c2hls
+mkdir -p "$HLS_WORK_ROOT"
+
+# Optional pre-step: merge a LoRA adapter into MERGE_BASE to produce MODEL
+# (compute node has the RAM for it; login-node cgroup OOM-kills CPU merges).
+if [ -n "${MERGE_ADAPTER:-}" ]; then
+  python "$PROJ/scripts/merge_adapter.py" \
+    --base "${MERGE_BASE:-Qwen/Qwen2.5-Coder-7B-Instruct}" \
+    --adapter "$MERGE_ADAPTER" --out "$MODEL" || exit 1
+fi
+
+# --- start vLLM server on this node ---
+# VLLM_LORA_MODULES="name=/path/to/adapter" serves LoRA adapters alongside the
+# base model — used for role-routing ablations (C2HLS_MODEL_<ROLE>=<name>).
+LORA_ARGS=""
+if [ -n "${VLLM_LORA_MODULES:-}" ]; then
+  LORA_ARGS="--enable-lora --max-lora-rank 32 --lora-modules $VLLM_LORA_MODULES"
+fi
+# YaRN rope scaling to serve MAXLEN beyond a model's native context (e.g. the
+# ~24.5K all-positive skill prompt + 8K output on the 32K-native Qwen2.5-Coder).
+# Set VLLM_ROPE_FACTOR=2.0 (etc); off by default so short-context runs aren't degraded.
+ROPE_ARGS=""
+if [ -n "${VLLM_ROPE_FACTOR:-}" ]; then
+  # vLLM 0.19 has no --rope-scaling flag; pass rope_scaling via --hf-overrides.
+  ROPE_ARGS="--hf-overrides {\"rope_scaling\":{\"rope_type\":\"yarn\",\"factor\":${VLLM_ROPE_FACTOR},\"original_max_position_embeddings\":${VLLM_ROPE_ORIG:-32768}}}"
+fi
+vllm serve "$MODEL" --tensor-parallel-size "$TP" \
+  --host 127.0.0.1 --port 8000 --max-model-len "$MAXLEN" \
+  --gpu-memory-utilization "${GPU_UTIL:-0.90}" $LORA_ARGS $ROPE_ARGS \
+  > "$PBS_O_WORKDIR/vllm_server_${PBS_JOBID%%.*}.log" 2>&1 &
+VLLM_PID=$!
+trap 'kill $VLLM_PID 2>/dev/null' EXIT
+
+echo "waiting for vLLM to load $MODEL ..."
+for i in $(seq 1 120); do
+  if curl -s --max-time 5 http://127.0.0.1:8000/v1/models | grep -q "$MODEL"; then
+    echo "vLLM ready after ~$((i*10))s"; READY=1; break
+  fi
+  kill -0 $VLLM_PID 2>/dev/null || { echo "vLLM server died — see vllm_server log"; exit 1; }
+  sleep 10
+done
+[ "${READY:-0}" = 1 ] || { echo "vLLM not ready after 20 min"; exit 1; }
+
+# --- run the C2HLS pipeline against the local server ---
+export OPENAI_BASE_URL=http://127.0.0.1:8000/v1
+export OPENAI_API_KEY=EMPTY
+cd "$C2HLS"
+OUTDIR=${OUTDIR:-/eagle/argonne_tpc/lyb/runs/c2hls/$(echo "$MODEL" | tr '/' '_')}
+mkdir -p "$OUTDIR"
+
+if [ -n "${C2HLS_ARGS:-}" ]; then
+  python c2hls.py --model "$MODEL" --turns "$TURNS" --output-dir "$OUTDIR" $C2HLS_ARGS
+else
+  python c2hls.py --model "$MODEL" --turns "$TURNS" --output-dir "$OUTDIR" --bench "$BENCH"
+fi
+rc=$?
+echo "=== c2hls exit code: $rc | results in $OUTDIR ==="
+exit $rc

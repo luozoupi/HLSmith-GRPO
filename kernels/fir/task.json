@@ -1,0 +1,31 @@
+{
+  "name": "fir",
+  "top": "fir",
+  "part": "xc7z020clg400-1",
+  "clock_period_ns": 10,
+  "timeout_s": 300,
+  "csim": true,
+  "baseline": {
+    "lat_best": 150,
+    "lat_avg": 150,
+    "lat_worst": 150,
+    "ii_min": 151,
+    "ii_max": 151,
+    "clk_est_ns": 6.923,
+    "lut": 1015,
+    "ff": 2290,
+    "dsp": 24,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 53200,
+    "avail_ff": 106400,
+    "avail_dsp": 220,
+    "avail_bram": 280
+  },
+  "budgets": {
+    "lut": 26600,
+    "ff": 53200,
+    "dsp": 110,
+    "bram": 140
+  }
+}

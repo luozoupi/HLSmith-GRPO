@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_seidel-2d",
+  "top": "kernel_seidel_2d",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 44556822,
+    "lat_avg": 44556822,
+    "lat_worst": 44556822,
+    "ii_min": 44556823,
+    "ii_max": 44556823,
+    "clk_est_ns": 2.474,
+    "lut": 1937,
+    "ff": 1857,
+    "dsp": 3,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "seidel-2d.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_seidel-2d",
+  "gt_file": "hls_baseline.cpp"
+}

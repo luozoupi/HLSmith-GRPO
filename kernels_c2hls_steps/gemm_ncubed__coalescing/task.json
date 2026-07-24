@@ -1,0 +1,38 @@
+{
+  "name": "gemm_ncubed__coalescing",
+  "top": "workload",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 524701,
+    "lat_avg": 524701,
+    "lat_worst": 524701,
+    "ii_min": 524702,
+    "ii_max": 524702,
+    "clk_est_ns": 2.673,
+    "lut": 14551,
+    "ff": 25792,
+    "dsp": 11,
+    "bram": 4,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "gemm.h"
+  ],
+  "source_benchmark": "/home/lyb/code_translation_c2hls/benchmarks/gemm_ncubed",
+  "gt_file": "hls_baseline.cpp",
+  "source_task": "gemm_ncubed",
+  "step": "coalescing"
+}

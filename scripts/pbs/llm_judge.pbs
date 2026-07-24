@@ -1,0 +1,47 @@
+#!/bin/bash
+#PBS -A argonne_tpc
+#PBS -q preemptable
+#PBS -l select=1
+#PBS -l walltime=02:00:00
+#PBS -l filesystems=home:eagle
+#PBS -N llm_judge
+#PBS -j oe
+
+# Serve a strong code judge with vLLM, calibrate LLM-as-judge vs real SDK labels
+# over DPO pairs. Judge default = Qwen2.5-Coder-32B-Instruct-AWQ (cached, code-specialized).
+#   qsub scripts/pbs/llm_judge.pbs
+#   qsub -v JUDGE=Qwen/Qwen3-8B,TP=1,NPAIRS=200 scripts/pbs/llm_judge.pbs
+
+cd "$PBS_O_WORKDIR"
+PROJ=/eagle/argonne_tpc/lyb/projects/llm-hls
+DPO=/eagle/argonne_tpc/lyb/data/csl_sft/raw/corpus/dpo_corpus.jsonl
+source "$PROJ/scripts/env/env_llmhls.sh"
+export HF_HUB_OFFLINE=1
+
+JUDGE=${JUDGE:-Qwen/Qwen2.5-Coder-32B-Instruct-AWQ}
+TP=${TP:-2}
+MAXLEN=${MAXLEN:-16384}
+NPAIRS=${NPAIRS:-200}
+OUTDIR=${OUTDIR:-/eagle/argonne_tpc/lyb/runs/eval_methods}
+mkdir -p "$OUTDIR"
+
+vllm serve "$JUDGE" --tensor-parallel-size "$TP" --host 127.0.0.1 --port 8000 \
+  --max-model-len "$MAXLEN" --gpu-memory-utilization "${GPU_UTIL:-0.90}" \
+  > "$OUTDIR/judge_server_${PBS_JOBID%%.*}.log" 2>&1 &
+VLLM_PID=$!
+trap 'kill $VLLM_PID 2>/dev/null' EXIT
+
+echo "waiting for judge vLLM ($JUDGE) ..."
+for i in $(seq 1 120); do
+  if curl -s --max-time 5 http://127.0.0.1:8000/v1/models | grep -q "$JUDGE"; then
+    echo "judge ready after ~$((i*10))s"; READY=1; break
+  fi
+  kill -0 $VLLM_PID 2>/dev/null || { echo "judge vLLM died — see $OUTDIR/judge_server log"; exit 1; }
+  sleep 10
+done
+[ "${READY:-0}" = 1 ] || { echo "judge not ready after 20 min"; exit 1; }
+
+python "$PROJ/scripts/llm_judge_calibration.py" \
+  --dpo "$DPO" --base-url http://127.0.0.1:8000/v1 --model "$JUDGE" \
+  --n "$NPAIRS" --out "$OUTDIR/judge_calibration.json"
+echo "=== judge calibration done -> $OUTDIR/judge_calibration.json ==="

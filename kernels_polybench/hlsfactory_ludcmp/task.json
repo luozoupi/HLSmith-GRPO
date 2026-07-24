@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_ludcmp",
+  "top": "kernel_ludcmp",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 7083,
+    "lat_avg": 6517563,
+    "lat_worst": 25029603,
+    "ii_min": 7084,
+    "ii_max": 25029604,
+    "clk_est_ns": 2.354,
+    "lut": 2720,
+    "ff": 3039,
+    "dsp": 11,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "ludcmp.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_ludcmp",
+  "gt_file": "hls_baseline.cpp"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_2mm",
+  "top": "kernel_2mm",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 1200415,
+    "lat_avg": 1200415,
+    "lat_worst": 1200415,
+    "ii_min": 1200416,
+    "ii_max": 1200416,
+    "clk_est_ns": 2.656,
+    "lut": 7362,
+    "ff": 11156,
+    "dsp": 33,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "2mm.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_2mm",
+  "gt_file": "hls_baseline.cpp"
+}

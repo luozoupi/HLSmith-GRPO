@@ -1,0 +1,36 @@
+{
+  "name": "hlsfactory_cholesky",
+  "top": "kernel_cholesky",
+  "part": "xcu280-fsvh2892-2L-e",
+  "clock_period_ns": 3.33,
+  "timeout_s": 600,
+  "csim": true,
+  "baseline": {
+    "lat_best": 4321,
+    "lat_avg": 3729241,
+    "lat_worst": 29351401,
+    "ii_min": 4322,
+    "ii_max": 29351402,
+    "clk_est_ns": 2.354,
+    "lut": 3200,
+    "ff": 3620,
+    "dsp": 22,
+    "bram": 0,
+    "uram": 0,
+    "avail_lut": 1303680,
+    "avail_ff": 2607360,
+    "avail_dsp": 9024,
+    "avail_bram": 4032
+  },
+  "budgets": {
+    "lut": 651840,
+    "ff": 1303680,
+    "dsp": 4512,
+    "bram": 2016
+  },
+  "aux_files": [
+    "cholesky.h"
+  ],
+  "source_benchmark": "/eagle/argonne_tpc/lyb/data/benchmarks_hlsfactory/hlsfactory_cholesky",
+  "gt_file": "hls_baseline.cpp"
+}
