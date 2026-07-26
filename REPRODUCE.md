@@ -122,7 +122,11 @@ baseline QoR source), `tb.cpp` (golden testbench), header/aux, and `task.json`.
 | NO_CODE / BANNED (`__SYNTHESIS__`) | -1.0 |
 | SYNTH_FAIL | -0.8 |
 | CSIM_FAIL / DEGENERATE | -0.6 |
-| OK | `0.2 + 0.6*min(2.0, baseline_lat/lat) - 0.5*overage`, clamped to [-0.4, 2.0] |
+| OK | `0.2 + 0.6*log2(min(8, baseline_lat/lat)) - 0.5*overage`, clamped to [-0.4, 2.0] |
+
+Log-scale speedup (+0.6 per doubling: match=+0.2, 2x=+0.8, 4x=+1.4, 8x=+2.0). A linear term
+capped at 2x under-rewarded optimization — a 7B learned to reproduce the reference (~1x gold) and
+stop; log2 keeps a strong gradient across the ~8-90x achievable headroom so deep optimization pays.
 
 Three load-bearing anti-reward-hacking guards:
 - **`BANNED_TOKENS = ("__SYNTHESIS__",)`** — the canonical exploit is `#ifdef`-ing the kernel

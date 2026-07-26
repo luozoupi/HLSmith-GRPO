@@ -13,6 +13,7 @@ Reward ladder (csim gate is mandatory for any positive reward — anti reward-ha
 
 from __future__ import annotations
 
+import math
 import multiprocessing
 import os
 import sys
@@ -51,12 +52,23 @@ R_DEGENERATE = -0.6
 # (e.g. empty) hardware — the canonical way to fool a csim-gated QoR reward.
 BANNED_TOKENS = ("__SYNTHESIS__",)
 
+# Reward for a correct design that merely MATCHES the reference latency (speedup 1x).
+# Kept low on purpose: reproducing the clean reference is "translation, not
+# optimization" and must earn much less than real speedup (see shaped_reward).
 R_SYNTH_OK_BASE = 0.2
 # Floor for csim-PASSING designs. Must stay above CSIM_FAIL (-0.6) so a correct
-# over-budget design is never ranked below wrong-results code.
+# over-budget/slow design is never ranked below wrong-results code.
 R_OK_FLOOR = -0.4
+R_OK_CEIL = 2.0
+# LOG-scale speedup: reward grows by SPEEDUP_WEIGHT per DOUBLING vs baseline.
+# Rationale (measured): the clean HLS reference leaves ~8-90x of optimization
+# headroom (frontier models hit 2-93x faster than gold, all cosim-verified). A
+# LINEAR term capped at 2x paid ~0.8 for "just translate the kernel" and only
+# +0.6 more for a full 2x — so a 7B learned to reproduce the reference and stop.
+# log2 keeps a strong gradient across the whole achievable range: match=+0,
+# 2x=+1, 4x=+2, 8x=+3 doublings, so deep optimization is what pays.
 SPEEDUP_WEIGHT = 0.6
-SPEEDUP_CAP = 2.0
+SPEEDUP_CAP_X = 8.0   # cap the speedup RATIO considered (realistic HLS ceiling)
 OVERAGE_WEIGHT = 0.5
 BUDGET_KEYS = ("lut", "ff", "dsp", "bram")
 
@@ -75,7 +87,11 @@ def shaped_reward(qor: dict, baseline: dict, budgets: dict) -> float:
         # 'undef' latency (unbounded loops): synthesized, but QoR is unusable.
         return 0.0
     if base_lat > 0:
-        reward += SPEEDUP_WEIGHT * min(SPEEDUP_CAP, base_lat / lat)
+        # log-scale: +SPEEDUP_WEIGHT per doubling vs baseline (ratio capped at
+        # SPEEDUP_CAP_X). Slower-than-baseline (ratio<1) yields a negative term,
+        # floored below to R_OK_FLOOR — correct-but-slow stays above wrong-results.
+        ratio = min(SPEEDUP_CAP_X, base_lat / lat)
+        reward += SPEEDUP_WEIGHT * math.log2(ratio)
 
     overage = 0.0
     for key in BUDGET_KEYS:
@@ -85,7 +101,7 @@ def shaped_reward(qor: dict, baseline: dict, budgets: dict) -> float:
             overage += max(0.0, used / budget - 1.0)
     reward -= OVERAGE_WEIGHT * overage
 
-    return max(R_OK_FLOOR, min(2.0, reward))
+    return max(R_OK_FLOOR, min(R_OK_CEIL, reward))
 
 
 def evaluate_completion(task: dict, completion_text: str,

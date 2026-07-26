@@ -153,11 +153,21 @@ def test_reward_monotonic_in_speedup():
     assert slow < par < fast
 
 
-def test_reward_speedup_capped():
-    fast = shaped_reward(_qor(lat=500), BASELINE, BUDGETS)     # 2x — at cap
-    faster = shaped_reward(_qor(lat=1), BASELINE, BUDGETS)     # 1000x — capped
-    assert fast == pytest.approx(faster)
-    assert faster <= 2.0
+def test_reward_speedup_logscale_and_capped():
+    # log2 speedup: +0.6 per doubling vs baseline (lat_worst=1000).
+    copy = shaped_reward(_qor(lat=1000), BASELINE, BUDGETS)    # 1x  -> +0.2
+    x2 = shaped_reward(_qor(lat=500), BASELINE, BUDGETS)       # 2x  -> +0.8
+    x4 = shaped_reward(_qor(lat=250), BASELINE, BUDGETS)       # 4x  -> +1.4
+    assert copy == pytest.approx(0.2)
+    assert x2 == pytest.approx(0.8)
+    assert x4 == pytest.approx(1.4)
+    # optimization is monotonically rewarded (unlike the old 2x-capped linear term)
+    assert copy < x2 < x4
+    # ...but the speedup RATIO is capped at 8x, so 8x and 1000x score identically
+    x8 = shaped_reward(_qor(lat=125), BASELINE, BUDGETS)       # 8x  -> +2.0 (cap)
+    huge = shaped_reward(_qor(lat=1), BASELINE, BUDGETS)       # 1000x -> capped
+    assert x8 == pytest.approx(huge)
+    assert huge <= 2.0
 
 
 def test_reward_budget_overage_penalized():

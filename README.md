@@ -91,7 +91,13 @@ every reward is negative, and training silently learns nothing.
 | NO_CODE / BANNED (`__SYNTHESIS__` escape hatch) | −1.0 |
 | COMPILE_FAIL / SYNTH_FAIL / TIMEOUT | −0.8 |
 | CSIM_FAIL, or DEGENERATE (csim-passing but empty circuit) | −0.6 |
-| OK | `0.2 + 0.6·min(2, baseline_lat/lat) − 0.5·overage`, clamped to [−0.4, 2] |
+| OK | `0.2 + 0.6·log2(min(8, baseline_lat/lat)) − 0.5·overage`, clamped to [−0.4, 2] |
+
+**Log-scale speedup** (`+0.6` per doubling vs baseline): match=+0.2, 2×=+0.8, 4×=+1.4, 8×=+2.0.
+This is deliberate — a linear term capped at 2× paid ~0.8 for merely *translating* the kernel and
+only +0.6 more for a full 2×, so a small model learned to reproduce the clean reference and stop
+(measured: ~1.0× gold everywhere, while frontier models hit 2–93× faster). log2 keeps a strong
+gradient across the whole achievable range, so **deep optimization is what pays**.
 
 The floor keeps every correct design above every failure mode. **Positive reward requires
 passing csim against the golden testbench** — that gate, plus the banned-token and
