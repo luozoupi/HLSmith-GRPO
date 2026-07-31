@@ -14,7 +14,16 @@ SFT is supported via `train_sft.py`.
        +---------------------- advantage ---------------+
 ```
 
-Runs on any HPC node with GPUs + a Vitis HLS install. **[REPRODUCE.md](REPRODUCE.md) is the
+Runs on any HPC node with GPUs + a Vitis HLS install.
+
+| Doc | What |
+|---|---|
+| **[METHOD_GRPO.md](METHOD_GRPO.md)** | the algorithm: GRPO formulation, hyperparameters, reward design, anti-reward-hacking, systems |
+| **[REPRODUCE.md](REPRODUCE.md)** | how to run it: pinned versions, exact commands, smoke test |
+| **[METHODOLOGY.md](METHODOLOGY.md)** | how to make a defensible claim: split discipline, cosim-not-csim |
+| **[splits.json](splits.json)** | canonical train/val/test partition |
+
+**[REPRODUCE.md](REPRODUCE.md) is the
 full recipe** — pinned versions, exact hyperparameters of a proven run, and the traps.
 
 ## Quick start
